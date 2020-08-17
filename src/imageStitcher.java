@@ -1,3 +1,5 @@
+import org.ini4j.Ini;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -7,37 +9,31 @@ import java.io.IOException;
 public class imageStitcher {
     public static void main(String[] args) {
 
-        String config = readConfig();
-        String pathForScreenshotInput = config.split("PathForScreenshotsToStitchTogether=")[1];
+        String pathToInputFolder = readPathToInputFolder();
 
-        File inputFolder = new File(pathForScreenshotInput);
-        if (inputFolder.exists()) {
-            System.out.println("ERROR: pathForScreenshotInput does not exist");
+        File inputFolder = new File(pathToInputFolder);
+        if (!inputFolder.exists()) {
+            System.out.println("ERROR: pathForInputFolder does not exist");
             return;
         }
-        String[] test = null;
+        String[] test = inputFolder.list();
+        System.out.println(test.length);
     }
 
     
-    private static String readConfig() {
+    private static String readPathToInputFolder() {
         String path = imageStitcher.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-        File test = new File(path + "/file");
+        path = "/home/anders/git/imageStitcher/workspace/";
+        File configFile = new File(path + "config");
         String toReturn = null;
 
-        BufferedReader br = null;
         try {
-            br = new BufferedReader(new FileReader(test)); 
-            toReturn = br.readLine();
+            Ini config = new Ini(configFile);
+            toReturn = config.get("Config", "PathToInputFolder");
         } catch (FileNotFoundException e) {
             System.out.println("ERROR: Config file not found!");
         } catch (IOException e) {
             System.out.println("ERROR: Something went wrong on reading the config file!");
-        } finally {
-            try {
-                if (br != null) br.close();
-            } catch (IOException e) {
-                System.out.println("ERROR: Something went wrong when closing the BufferedReader Instance!");
-            }
         }
         return toReturn;
     }
