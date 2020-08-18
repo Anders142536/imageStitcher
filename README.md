@@ -1,1 +1,1 @@
-# imageStitcher
+# ImageStitcher
