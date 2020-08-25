@@ -5,9 +5,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Scanner;
+import java.util.regex.Pattern;
 
 public class ImageStitcher {
-    static String path;
+    static String pathExecutable;
+    static String pathOutputFolder;
     static HashMap<String, StitchJob> jobs = new HashMap<>();
 
     //values from config file
@@ -81,16 +83,16 @@ public class ImageStitcher {
      */
     private static boolean  loadConfig() {
         System.out.print("Loading config file.. ");
-        path = ImageStitcher.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-        path = "/home/anders/git/imageStitcher/workspace/"; //TODO: delete this
+        pathExecutable = ImageStitcher.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        pathExecutable = "/home/anders/git/imageStitcher/workspace/"; //TODO: delete this
 
         try {
-            Ini config = new Ini(new File(path + "config"));
+            Ini config = new Ini(new File(pathExecutable + "config"));
             pathToInputFolder = config.get("Config", "PathToInputFolder");
         } catch (FileNotFoundException e) {
             System.out.println("\nERROR: Config file not found!\n" +
                     "If this is your first run, you have nothing to worry about. A config file was created for you here:\n" +
-                    path + "config\n" +
+                    pathExecutable + "config\n" +
                     "Please set all configurations and try again.");
             createEmptyConfig();
             return false;
@@ -105,7 +107,7 @@ public class ImageStitcher {
 
     private static void createEmptyConfig() {
         try {
-            File f = new File(path + "config");
+            File f = new File(pathExecutable + "config");
             f.createNewFile();
             Ini config = new Ini(f);
             config.put("Config", "PathToInputFolder", "Replace me with the path to the input folder");
@@ -155,22 +157,61 @@ public class ImageStitcher {
     }
 
     private static void stitchJobs() {
-        long timestamp = System.currentTimeMillis();
-        int count = 0;
-        int length = (int) (Math.log10(jobs.size()) + 1); //counts the digits of the number of jobs
+        prepareStitching();
         System.out.println("Starting stitching...");
+        long timestamp = System.currentTimeMillis();
+        long lastMessage = timestamp;
+        int jobCount = 0;
+        int issueCount = 0;
+        int numberOfJobsDigitCount = (int) (Math.log10(jobs.size()) + 1);
+
         for (StitchJob j: jobs.values()) {
-            j.stitch();
-            count++;
+            try {
+                j.stitch();
+            } catch (StitchException e) {
+                System.out.println("ERROR: Could not stitch " + j.getName() + "" +
+                        "\nReason:\n" + e.reason);
+                issueCount++;
+            }
+            jobCount++;
 
             //if at least one second has passed and it was not the last job that just finished
-            if (System.currentTimeMillis() - 1000 < timestamp && count < jobs.size()) {
-                String formattedNumbers = String.format("%1$" + length + "s / " + jobs.size(), count);
-                String formattedPercentages = String.format("%1$2d", ((int) (count / jobs.size() * 100)));
-                System.out.println(formattedNumbers + " (" + formattedPercentages + "%) stitched.");
-                timestamp = System.currentTimeMillis();
+            if (System.currentTimeMillis() - 1000 < lastMessage && jobCount < jobs.size()) {
+                String formattedNumbers = String.format("%1$" + numberOfJobsDigitCount + "s / " + jobs.size(), jobCount);
+                String formattedPercentages = String.format("%1$2d", (jobCount / jobs.size() * 100));
+                System.out.println(formattedNumbers + " (" + formattedPercentages + "%).");
+                lastMessage = System.currentTimeMillis();
             }
         }
-        System.out.println("Stitching done.");
+        long duration = System.currentTimeMillis() - timestamp;
+        System.out.print("Stitching done. It took " + formatDuration(duration));
+        if (issueCount != 0) System.out.println(issueCount + " files had issues and might not have been handled correctly");
+    }
+
+    private static void prepareStitching() {
+        StitchJob.pattern = Pattern.compile("(\\d*)_y(\\d*)");
+        pathOutputFolder = pathExecutable + "/stitchedScreenshots/";
+        File outputFolder = new File(pathOutputFolder);
+        if (!outputFolder.exists()) outputFolder.mkdir();
+    }
+
+    private static String formatDuration(long duration) {
+        // 1000 000 000
+        //  min   s  ms
+        String result = "";
+        if (duration >= 3_600_000) {
+            result += (int)(duration / 3_600_000) + "h ";
+            duration %= 3_600_000;
+        }
+        if (duration >= 60_000) {
+            result += (int)(duration / 60_000) + "min ";
+            duration %= 60_000;
+        }
+        if (duration >= 1000) {
+            result += (int)(duration / 1000) + "s ";
+            duration %= 1000;
+        }
+        result += duration + "ms";
+        return result;
     }
 }
