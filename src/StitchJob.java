@@ -96,7 +96,7 @@ public class StitchJob {
     }
 
     public void writeResultToFile() throws StitchException {
-        File output = new File(ImageStitcher.pathOutputFolder + name + ".png");
+        File output = new File(ImageStitcher.pathOutputFolder + "/" + name + ".png");
         try {
             ImageIO.write(result, "png", output);
         } catch (IOException e) {

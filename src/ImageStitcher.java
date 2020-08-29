@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 
 public class ImageStitcher {
     static String pathExecutable;
+    static String pathParentDir;
     static String pathOutputFolder;
     static HashMap<String, StitchJob> jobs = new HashMap<>();
 
@@ -84,10 +85,11 @@ public class ImageStitcher {
     private static boolean  loadConfig() {
         System.out.print("Loading config file.. ");
         pathExecutable = ImageStitcher.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-        pathExecutable = "/home/anders/git/imageStitcher/workspace/"; //TODO: delete this
+//        pathExecutable = "/home/anders/git/imageStitcher/workspace/"; //TODO: delete this
 
         try {
-            Ini config = new Ini(new File(pathExecutable + "config"));
+            pathParentDir = new File(pathExecutable).getParent();
+            Ini config = new Ini(new File(pathParentDir + "/imageStitcher.config"));
             pathToInputFolder = config.get("Config", "PathToInputFolder");
         } catch (FileNotFoundException e) {
             System.out.println("\nERROR: Config file not found!\n" +
@@ -107,7 +109,7 @@ public class ImageStitcher {
 
     private static void createEmptyConfig() {
         try {
-            File f = new File(pathExecutable + "config");
+            File f = new File(pathParentDir + "/imageStitcher.config");
             f.createNewFile();
             Ini config = new Ini(f);
             config.put("Config", "PathToInputFolder", "Replace me with the path to the input folder");
@@ -176,9 +178,9 @@ public class ImageStitcher {
             jobCount++;
 
             //if at least one second has passed and it was not the last job that just finished
-            if (System.currentTimeMillis() - 1000 < lastMessage && jobCount < jobs.size()) {
+            if (System.currentTimeMillis() - 1000 > lastMessage && jobCount < jobs.size()) {
                 String formattedNumbers = String.format("%1$" + numberOfJobsDigitCount + "s / " + jobs.size(), jobCount);
-                String formattedPercentages = String.format("%1$2d", (jobCount / jobs.size() * 100));
+                String formattedPercentages = String.format("%1$2d", ((jobCount * 100) / jobs.size()));
                 System.out.println(formattedNumbers + " (" + formattedPercentages + "%).");
                 lastMessage = System.currentTimeMillis();
             }
@@ -190,7 +192,7 @@ public class ImageStitcher {
 
     private static void prepareStitching() {
         StitchJob.pattern = Pattern.compile("(\\d*)_y(\\d*)");
-        pathOutputFolder = pathExecutable + "/stitchedScreenshots/";
+        pathOutputFolder = pathParentDir + "/stitchedScreenshots";
         File outputFolder = new File(pathOutputFolder);
         if (!outputFolder.exists()) outputFolder.mkdir();
     }
