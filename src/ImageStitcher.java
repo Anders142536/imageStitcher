@@ -112,7 +112,7 @@ public class ImageStitcher {
             File f = new File(pathParentDir + "/imageStitcher.config");
             f.createNewFile();
             Ini config = new Ini(f);
-            config.put("Config", "PathToInputFolder", "Replace me with the path to the input folder");
+            config.put("Config", "PathToInputFolder", "Replace me with the path to the input folder. When on windows, a backslash in the path needs to be replaced with either \\ or a /");
             config.store();
         } catch (IOException e) {
             System.out.println("ERROR: Something went wrong when trying to create an empty config file!");
@@ -164,6 +164,7 @@ public class ImageStitcher {
         long timestamp = System.currentTimeMillis();
         long lastMessage = timestamp;
         int jobCount = 0;
+        int jobSize = jobs.size();
         int issueCount = 0;
         int numberOfJobsDigitCount = (int) (Math.log10(jobs.size()) + 1);
 
@@ -178,9 +179,9 @@ public class ImageStitcher {
             jobCount++;
 
             //if at least one second has passed and it was not the last job that just finished
-            if (System.currentTimeMillis() - 1000 > lastMessage && jobCount < jobs.size()) {
-                String formattedNumbers = String.format("%1$" + numberOfJobsDigitCount + "s / " + jobs.size(), jobCount);
-                String formattedPercentages = String.format("%1$2d", ((jobCount * 100) / jobs.size()));
+            if (System.currentTimeMillis() - 1000 > lastMessage && jobCount < jobSize) {
+                String formattedNumbers = String.format("%1$" + numberOfJobsDigitCount + "s / " + jobSize, jobCount);
+                String formattedPercentages = String.format("%1$2d", ((jobCount * 100) / jobSize));
                 System.out.println(formattedNumbers + " (" + formattedPercentages + "%).");
                 lastMessage = System.currentTimeMillis();
             }
@@ -193,6 +194,7 @@ public class ImageStitcher {
     private static void prepareStitching() {
         StitchJob.pattern = Pattern.compile("(\\d*)_y(\\d*)");
         pathOutputFolder = pathParentDir + "/stitchedScreenshots";
+
         File outputFolder = new File(pathOutputFolder);
         if (!outputFolder.exists()) outputFolder.mkdir();
     }

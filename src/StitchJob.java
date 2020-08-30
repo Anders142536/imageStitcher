@@ -102,6 +102,7 @@ public class StitchJob {
         } catch (IOException e) {
             throw new StitchException(e.getMessage());
         }
+        result = null; //Freeing the memory used by the result
     }
 
     public String getName() {
