@@ -43,7 +43,7 @@ public class StitchJob {
     }
 
     private void prepareStitching() throws StitchException {
-        if (files.size() == 0) throw new StitchException("No files found to stitch!");
+        if (files.isEmpty()) throw new StitchException(name, "ERROR: No files found to stitch!");
         checkTileCount();
         checkStepSizes();
 
@@ -69,7 +69,7 @@ public class StitchJob {
             stepSizeX = sample.getWidth();
             stepSizeY = sample.getHeight();
         } catch (IOException e) {
-            throw new StitchException(e.getMessage());
+            throw new StitchException(name, "ERROR: Something went wrong when checking the stepsize:\n" + e.getMessage());
         }
     }
 
@@ -79,19 +79,24 @@ public class StitchJob {
         Matcher matcher;
         int xOffset;
         int yOffset;
+        String filename = "";
 
         try {
             for (File f : files) {
+                filename = f.getName();
                 temp = ImageIO.read(f);
                 matcher = pattern.matcher(f.getName());
                 if (matcher.find()) {
                     xOffset = Integer.parseInt(matcher.group(1));
                     yOffset = Integer.parseInt(matcher.group(2));
                     g.drawImage(temp, stepSizeX * xOffset, stepSizeY * yOffset, null);
-                } else System.out.println("WARN: Couldn't extract x and y offset from filename " + f.getName() + "!. File will be skipped.");
+                }
+                // nasty, i know, don't judge me
+                else ImageStitcher.foundIssue(new StitchException(name, "WARN: Couldn't extract x and y offset from filename "
+                        + f.getName() + "!. File will be skipped."));
             }
         } catch (IOException e) {
-            throw new StitchException(e.getMessage());
+            throw new StitchException(name, "ERROR: Couldn't read file " + filename + ":\n" + e.getMessage());
         }
     }
 
@@ -100,7 +105,7 @@ public class StitchJob {
         try {
             ImageIO.write(result, "png", output);
         } catch (IOException e) {
-            throw new StitchException(e.getMessage());
+            throw new StitchException(name, "ERROR: Couldn't write the result to path " + output.getName() + "\n" + e.getMessage());
         }
         result = null; //Freeing the memory used by the result
     }

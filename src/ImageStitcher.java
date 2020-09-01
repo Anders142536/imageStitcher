@@ -3,18 +3,26 @@ import org.ini4j.Ini;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Scanner;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class ImageStitcher {
-    static String pathExecutable;
-    static String pathParentDir;
-    static String pathOutputFolder;
-    static HashMap<String, StitchJob> jobs = new HashMap<>();
+    static HashMap<String, StitchJob> jobMap = new HashMap<>();
+    static Queue<StitchJob> jobs;
+    static List<StitchThread> threads = new ArrayList<>();
+    static int jobsDoneCount = 0;
+    static List<StitchException> issues;
+    static int numberOfJobs;
+    static int numberOfJobsDigitCount;
 
     //values from config file
     static String pathToInputFolder;
+    static int desiredThreads;
+
+    //paths
+    static String pathExecutable;
+    static String pathParentDir;
+    static String pathOutputFolder;
 
     public static void main(String[] args) {
         welcome();
@@ -32,7 +40,7 @@ public class ImageStitcher {
 
         System.out.print(inputFolder.list().length + " files found in input folder being groupable into.. ");
         readFilesFromInputFolder(inputFolder);
-        System.out.print(jobs.size() + " screenshot(s).\n" +
+        System.out.print(jobMap.size() + " screenshot(s).\n" +
                 "Please keep in mind that this might take quite a while and will take the same amount of space on your hard drive" +
                 " as the initial input folder.\n" +
                 "Do you want to start stitching? (yes/no) ");
@@ -126,10 +134,10 @@ public class ImageStitcher {
         StitchJob job;
         for (File f: inputFolder.listFiles()) {
             filename = peelName(f);
-            if (!jobs.containsKey(filename)) {
+            if (!jobMap.containsKey(filename)) {
                 job = new StitchJob(filename);
-                jobs.put(filename, job);
-            } else job = jobs.get(filename);
+                jobMap.put(filename, job);
+            } else job = jobMap.get(filename);
 
             job.addFile(f);
         }
@@ -160,43 +168,76 @@ public class ImageStitcher {
 
     private static void stitchJobs() {
         prepareStitching();
-        System.out.println("Starting stitching...");
         long timestamp = System.currentTimeMillis();
-        long lastMessage = timestamp;
-        int jobCount = 0;
-        int jobSize = jobs.size();
-        int issueCount = 0;
-        int numberOfJobsDigitCount = (int) (Math.log10(jobs.size()) + 1);
 
-        for (StitchJob j: jobs.values()) {
+        while (!jobs.isEmpty() && areThreadsAlive()) {
             try {
-                j.stitch();
-            } catch (StitchException e) {
-                System.out.println("ERROR: Could not stitch " + j.getName() + "" +
-                        "\nReason:\n" + e.reason);
-                issueCount++;
-            }
-            jobCount++;
-
-            //if at least one second has passed and it was not the last job that just finished
-            if (System.currentTimeMillis() - 1000 > lastMessage && jobCount < jobSize) {
-                String formattedNumbers = String.format("%1$" + numberOfJobsDigitCount + "s / " + jobSize, jobCount);
-                String formattedPercentages = String.format("%1$2d", ((jobCount * 100) / jobSize));
-                System.out.println(formattedNumbers + " (" + formattedPercentages + "%).");
-                lastMessage = System.currentTimeMillis();
+                Thread.sleep(1000);
+            } catch(InterruptedException ex) {
+                Thread.currentThread().interrupt();
             }
         }
+
         long duration = System.currentTimeMillis() - timestamp;
-        System.out.print("Stitching done. It took " + formatDuration(duration));
-        if (issueCount != 0) System.out.println(issueCount + " files had issues and might not have been handled correctly");
+        System.out.println("Stitching done. It took " + formatDuration(duration));
+        if (!issues.isEmpty()) printIssues();
     }
 
     private static void prepareStitching() {
+        jobs = new LinkedList<>(jobMap.values());
+        issues = new ArrayList<>();
+        numberOfJobs = jobs.size();
+        numberOfJobsDigitCount = (int) (Math.log10(numberOfJobs) + 1);
+
         StitchJob.pattern = Pattern.compile("(\\d*)_y(\\d*)");
         pathOutputFolder = pathParentDir + "/stitchedScreenshots";
-
         File outputFolder = new File(pathOutputFolder);
         if (!outputFolder.exists()) outputFolder.mkdir();
+
+        for (int i = 0; i < desiredThreads; i++) {
+            StitchThread newThread = new StitchThread();
+            threads.add(newThread);
+            newThread.start();
+        }
+    }
+
+    private static boolean areThreadsAlive() {
+        for (StitchThread t: threads) {
+            if (t.isAlive()) return true;
+        }
+        return false;
+    }
+
+    static synchronized StitchJob next() {
+        return jobs.poll();
+    }
+
+    static synchronized void foundIssue(StitchException e) {
+        issues.add(e);
+    }
+
+    static synchronized void jobDone() {
+        jobsDoneCount++;
+        String formattedNumbers = String.format("%1$" + numberOfJobsDigitCount + "s / " + numberOfJobs, jobsDoneCount);
+        String formattedPercentages = String.format("%1$2d", ((jobsDoneCount * 100) / numberOfJobs));
+        System.out.print(loadingbar() + " " + formattedNumbers + " (" + formattedPercentages + "%), " + issues.size() + " issue(s)\r");
+    }
+
+    //TODO: improve this if a way is found
+    private static String loadingbar() {
+        String bar = "[";
+        int lengthBar = 20;
+        int progress = ((jobsDoneCount * lengthBar) / numberOfJobs);
+
+        for (int i = progress; i > 0; i--) {
+            bar += "#";
+        }
+
+        for (int i = lengthBar - progress; i > 0; i--) {
+            bar += " ";
+        }
+
+        return bar + "]";
     }
 
     private static String formatDuration(long duration) {
@@ -217,5 +258,12 @@ public class ImageStitcher {
         }
         result += duration + "ms";
         return result;
+    }
+
+    private static void printIssues() {
+        System.out.println("List of issues:\n\n");
+        for (StitchException e: issues) {
+            System.out.println(e.filename + ":\n" + e.reason);
+        }
     }
 }
