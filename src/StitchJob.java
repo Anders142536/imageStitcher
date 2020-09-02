@@ -59,8 +59,8 @@ public class StitchJob {
         else if (files.size() <= 1024) tileCount = 32;
         else tileCount = 64;
 
-        if (files.size() != Math.pow(tileCount, 2)) System.out.println("WARN: There seem to be some files missing in file "
-                + name + ". There were " + files.size() + " files found. A power of 4 is expected.");
+        if (files.size() != Math.pow(tileCount, 2)) ImageStitcher.foundIssue(new StitchException(name, "WARN: There seem to be some files missing. " +
+                "There were " + files.size() + " files found. A power of 4 is expected."));
     }
 
     private void checkStepSizes() throws StitchException {

@@ -94,33 +94,39 @@ public class ImageStitcher {
         System.out.print("Loading config file.. ");
         pathExecutable = ImageStitcher.class.getProtectionDomain().getCodeSource().getLocation().getPath();
 //        pathExecutable = "/home/anders/git/imageStitcher/workspace/"; //TODO: delete this
+//        pathExecutable = "D:/git/imageStitcher/workspace/"; //TODO: delete this
 
         try {
             pathParentDir = new File(pathExecutable).getParent();
             Ini config = new Ini(new File(pathParentDir + "/imageStitcher.config"));
             pathToInputFolder = config.get("Config", "PathToInputFolder");
+            desiredThreads = Integer.parseInt(config.get("Config", "DesiredNumberOfThreads"));
         } catch (FileNotFoundException e) {
+            String path = pathParentDir + "/imageStitcher.config";
             System.out.println("\nERROR: Config file not found!\n" +
                     "If this is your first run, you have nothing to worry about. A config file was created for you here:\n" +
-                    pathExecutable + "config\n" +
-                    "Please set all configurations and try again.");
-            createEmptyConfig();
+                    path + "\nPlease set all configurations and try again.");
+            createEmptyConfig(path);
             return false;
         } catch (IOException e) {
             System.out.println("\nERROR: Something went wrong on reading the config file!\n" +
                     "It should be written in the ini format. Please make sure it is a correctly formatted ini file and try again.");
             return false;
+        } catch (NumberFormatException e) {
+            System.out.println("\nERROR: Something went wrong on reading some number!\n" +
+                    "Please make sure that all numbers are actual numbers.");
         }
         System.out.println("done.");
         return true;
     }
 
-    private static void createEmptyConfig() {
+    private static void createEmptyConfig(String path) {
         try {
-            File f = new File(pathParentDir + "/imageStitcher.config");
+            File f = new File(path);
             f.createNewFile();
             Ini config = new Ini(f);
             config.put("Config", "PathToInputFolder", "Replace me with the path to the input folder. When on windows, a backslash in the path needs to be replaced with either \\ or a /");
+            config.put("Config", "DesiredNumberOfThreads", 8);
             config.store();
         } catch (IOException e) {
             System.out.println("ERROR: Something went wrong when trying to create an empty config file!");
@@ -170,7 +176,7 @@ public class ImageStitcher {
         prepareStitching();
         long timestamp = System.currentTimeMillis();
 
-        while (!jobs.isEmpty() && areThreadsAlive()) {
+        while (!jobs.isEmpty() || areThreadsAlive()) {
             try {
                 Thread.sleep(1000);
             } catch(InterruptedException ex) {
@@ -179,7 +185,7 @@ public class ImageStitcher {
         }
 
         long duration = System.currentTimeMillis() - timestamp;
-        System.out.println("Stitching done. It took " + formatDuration(duration));
+        System.out.println("\nStitching done. It took " + formatDuration(duration));
         if (!issues.isEmpty()) printIssues();
     }
 
@@ -194,6 +200,7 @@ public class ImageStitcher {
         File outputFolder = new File(pathOutputFolder);
         if (!outputFolder.exists()) outputFolder.mkdir();
 
+        printLoadingbar();
         for (int i = 0; i < desiredThreads; i++) {
             StitchThread newThread = new StitchThread();
             threads.add(newThread);
@@ -218,14 +225,14 @@ public class ImageStitcher {
 
     static synchronized void jobDone() {
         jobsDoneCount++;
-        String formattedNumbers = String.format("%1$" + numberOfJobsDigitCount + "s / " + numberOfJobs, jobsDoneCount);
-        String formattedPercentages = String.format("%1$2d", ((jobsDoneCount * 100) / numberOfJobs));
-        System.out.print(loadingbar() + " " + formattedNumbers + " (" + formattedPercentages + "%), " + issues.size() + " issue(s)\r");
+        printLoadingbar();
+
     }
 
     //TODO: improve this if a way is found
-    private static String loadingbar() {
-        String bar = "[";
+    private static void printLoadingbar() {
+
+        String bar = "\r[";
         int lengthBar = 20;
         int progress = ((jobsDoneCount * lengthBar) / numberOfJobs);
 
@@ -237,7 +244,11 @@ public class ImageStitcher {
             bar += " ";
         }
 
-        return bar + "]";
+        bar += "]";
+
+        String formattedNumbers = String.format("%1$" + numberOfJobsDigitCount + "s / " + numberOfJobs, jobsDoneCount);
+        String formattedPercentages = String.format("%1$2d", ((jobsDoneCount * 100) / numberOfJobs));
+        System.out.print(bar + " " + formattedNumbers + " (" + formattedPercentages + "%), " + issues.size() + " issue(s)");
     }
 
     private static String formatDuration(long duration) {
@@ -261,7 +272,7 @@ public class ImageStitcher {
     }
 
     private static void printIssues() {
-        System.out.println("List of issues:\n\n");
+        System.out.println("\nList of issues:");
         for (StitchException e: issues) {
             System.out.println(e.filename + ":\n" + e.reason);
         }
