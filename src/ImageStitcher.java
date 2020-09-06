@@ -4,12 +4,16 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ImageStitcher {
     static HashMap<String, StitchJob> jobMap = new HashMap<>();
     static Queue<StitchJob> jobs;
     static List<StitchThread> threads = new ArrayList<>();
+    static Pattern pattern;
+    static Matcher matcher;
+
     static int jobsDoneCount = 0;
     static List<StitchException> issues;
     static int numberOfJobs;
@@ -135,23 +139,37 @@ public class ImageStitcher {
     }
 
     private static void readFilesFromInputFolder(File inputFolder) {
-        //TODO: optimize this to only touch the map if the filename is different from the one of last runs
+        pattern = Pattern.compile("([^_]{4,})_x(\\d+)_y(\\d+)");
         String filename;
-        StitchJob job;
-        for (File f: inputFolder.listFiles()) {
-            filename = peelName(f);
-            if (!jobMap.containsKey(filename)) {
-                job = new StitchJob(filename);
-                jobMap.put(filename, job);
-            } else job = jobMap.get(filename);
+        int posX;
+        int posY;
+        StitchJob job = null;
 
-            job.addFile(f);
+        for (File f: inputFolder.listFiles()) {
+            matcher = pattern.matcher(f.getName());
+            if (matcher.find()) {
+                filename = matcher.group(1);
+                posX = Integer.parseInt(matcher.group(2));
+                posY = Integer.parseInt(matcher.group(3));
+
+                if (job == null || !job.getName().equals(filename)) {
+                    if (jobMap.containsKey(filename)) job = jobMap.get(filename);
+                    else {
+                        job = new StitchJob(filename);
+                        jobMap.put(filename, job);
+                    }
+                }
+
+                job.addFile(f, posX, posY);
+            } else
+                System.out.println("WARN: File " + f.getName() +
+                        " seems to not match the expected naming pattern. File will be skipped");
         }
     }
 
     private static boolean userWantsToStitch() {
         Scanner s = new Scanner(System.in);
-        String input = null;
+        String input;
         while ((input = s.nextLine()) != null) {
             switch (input) {
                 case "yes":
@@ -166,10 +184,6 @@ public class ImageStitcher {
         }
 
         return false;
-    }
-
-    private static String peelName(File input){
-        return input.getName().replaceAll("_.*", "");
     }
 
     private static void stitchJobs() {
@@ -195,7 +209,6 @@ public class ImageStitcher {
         numberOfJobs = jobs.size();
         numberOfJobsDigitCount = (int) (Math.log10(numberOfJobs) + 1);
 
-        StitchJob.pattern = Pattern.compile("(\\d*)_y(\\d*)");
         pathOutputFolder = pathParentDir + "/stitchedScreenshots";
         File outputFolder = new File(pathOutputFolder);
         if (!outputFolder.exists()) outputFolder.mkdir();

@@ -8,95 +8,69 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class StitchJob {
-    static Pattern pattern;
-
     private final String name;
-    private final List<File> files;
-    private int tileCount;
+    private final List<Tile> tiles;
     private int stepSizeX;
     private int stepSizeY;
+    private int maxX;
+    private int maxY;
     private BufferedImage result;
 
     public StitchJob(String name) {
         this.name = name;
-        files = new ArrayList<>();
+        tiles = new ArrayList<>();
     }
 
-    public void addFile(File f) {
-        files.add(f);
-        if (f.getName().matches("[^_]{4,}_x\\d+_y\\d+")) System.out.println("WARN: File " + f.getName() + " seems to not match the expected naming pattern.");
+    public void addFile(File f, int posX, int posY) {
+        if (posX > maxX) maxX = posX;
+        if (posY > maxY) maxY = posY;
+        tiles.add(new Tile(f, posX, posY));
     }
 
     public void stitch() throws StitchException {
-        long startTimestamp = System.nanoTime();
-        prepareStitching();
+//        long startTimestamp = System.nanoTime();
+        if (tiles.isEmpty()) throw new StitchException(name, "ERROR: No files found to stitch!");
+        if (!tilesSizeIsValid()) ImageStitcher.foundIssue(new StitchException(name, "WARN: There seem to be some files missing. " +
+                "There were " + tiles.size() + " files found. " + maxX + " times " + maxY + " were expected."));
+        getStepSizesFromSample();
+
+        result = new BufferedImage(stepSizeX * maxX, stepSizeY * maxY, BufferedImage.TYPE_INT_ARGB);
+
         drawFilesToResult();
         writeResultToFile();
 
-        long duration = System.nanoTime() - startTimestamp;
+//        long duration = System.nanoTime() - startTimestamp;
 //        System.out.println("Stitching duration: " + duration + "ns"); //TODO: make this a log call once logging is implemented
 //        showImage();
     }
 
-    private void prepareStitching() throws StitchException {
-        if (files.isEmpty()) throw new StitchException(name, "ERROR: No files found to stitch!");
-        checkTileCount();
-        checkStepSizes();
-
-        result = new BufferedImage(stepSizeX * tileCount, stepSizeY * tileCount, BufferedImage.TYPE_INT_ARGB);
+    private boolean tilesSizeIsValid() {
+        return tiles.size() == maxX * maxY;
     }
 
-    private void checkTileCount() {
-        if (files.size() <= 1) tileCount = 1;
-        else if (files.size() <= 4) tileCount = 2;
-        else if (files.size() <= 16) tileCount = 4;
-        else if (files.size() <= 64) tileCount = 8;
-        else if (files.size() <= 256) tileCount = 16;
-        else if (files.size() <= 1024) tileCount = 32;
-        else tileCount = 64;
-
-        if (files.size() != Math.pow(tileCount, 2)) ImageStitcher.foundIssue(new StitchException(name, "WARN: There seem to be some files missing. " +
-                "There were " + files.size() + " files found. A power of 4 is expected."));
-    }
-
-    private void checkStepSizes() throws StitchException {
+    private void getStepSizesFromSample() throws StitchException {
         try {
-            BufferedImage sample = ImageIO.read(files.get(0));
+            BufferedImage sample = ImageIO.read(tiles.get(0).file);
             stepSizeX = sample.getWidth();
             stepSizeY = sample.getHeight();
         } catch (IOException e) {
-            throw new StitchException(name, "ERROR: Something went wrong when checking the stepsize:\n" + e.getMessage());
+            throw new StitchException(name, "ERROR: Something went wrong when getting the stepsize:\n" + e.getMessage());
         }
     }
 
     private void drawFilesToResult() throws StitchException {
         Graphics g = result.createGraphics();
         BufferedImage temp;
-        Matcher matcher;
-        int xOffset;
-        int yOffset;
-        String filename = "";
 
-        try {
-            for (File f : files) {
-                filename = f.getName();
-                temp = ImageIO.read(f);
-                matcher = pattern.matcher(f.getName());
-                if (matcher.find()) {
-                    xOffset = Integer.parseInt(matcher.group(1));
-                    yOffset = Integer.parseInt(matcher.group(2));
-                    g.drawImage(temp, stepSizeX * xOffset, stepSizeY * yOffset, null);
-                }
-                // nasty, i know, don't judge me
-                else ImageStitcher.foundIssue(new StitchException(name, "WARN: Couldn't extract x and y offset from filename "
-                        + f.getName() + "!. File will be skipped."));
+        for (Tile t : tiles) {
+            try {
+                temp = ImageIO.read(t.file);
+                g.drawImage(temp, stepSizeX * t.posX, stepSizeY * t.posY, null);
+            } catch (IOException e) {
+                throw new StitchException(name, "ERROR: Couldn't read file " + t.file.getName() + ":\n" + e.getMessage());
             }
-        } catch (IOException e) {
-            throw new StitchException(name, "ERROR: Couldn't read file " + filename + ":\n" + e.getMessage());
         }
     }
 
@@ -107,12 +81,9 @@ public class StitchJob {
         } catch (IOException e) {
             throw new StitchException(name, "ERROR: Couldn't write the result to path " + output.getName() + "\n" + e.getMessage());
         }
-        result = null; //Freeing the memory used by the result
     }
 
-    public String getName() {
-        return name;
-    }
+    public String getName() { return name; }
 
     //Debug method that directly shows the image that is built. Exclusively for testing.
     private void showImage() {
