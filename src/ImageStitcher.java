@@ -34,7 +34,7 @@ public class ImageStitcher {
 
         File inputFolder = new File(pathToInputFolder);
         if (!inputFolder.exists()) {
-            System.out.println("ERROR: pathForInputFolder does not exist");
+            System.out.println("ERROR: pathForInputFolder >" + pathToInputFolder + "< does not exist");
             return;
         }
         if (inputFolder.length() == 0) {
@@ -130,7 +130,7 @@ public class ImageStitcher {
             f.createNewFile();
             Ini config = new Ini(f);
             config.put("Config", "PathToInputFolder", "Replace me with the path to the input folder. When on windows, a backslash in the path needs to be replaced with either \\ or a /");
-            config.put("Config", "DesiredNumberOfThreads", 8);
+            config.put("Config", "DesiredNumberOfThreads", "8");
             config.store();
         } catch (IOException e) {
             System.out.println("ERROR: Something went wrong when trying to create an empty config file!");

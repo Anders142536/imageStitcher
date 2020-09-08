@@ -33,7 +33,7 @@ public class StitchJob {
 //        long startTimestamp = System.nanoTime();
         if (tiles.isEmpty()) throw new StitchException(name, "ERROR: No files found to stitch!");
         if (!tilesSizeIsValid()) ImageStitcher.foundIssue(new StitchException(name, "WARN: There seem to be some files missing. " +
-                "There were " + tiles.size() + " files found. " + maxX + " times " + maxY + " were expected."));
+                "There were " + tiles.size() + " files found. " + (maxX + 1) + " times " + (maxY + 1) + " were expected."));
         getStepSizesFromSample();
 
         result = new BufferedImage(stepSizeX * maxX, stepSizeY * maxY, BufferedImage.TYPE_INT_ARGB);
@@ -47,7 +47,7 @@ public class StitchJob {
     }
 
     private boolean tilesSizeIsValid() {
-        return tiles.size() == maxX * maxY;
+        return tiles.size() == (maxX + 1) * (maxY + 1);
     }
 
     private void getStepSizesFromSample() throws StitchException {
