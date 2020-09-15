@@ -205,6 +205,7 @@ public class ImageStitcher {
 
     private static void prepareStitching() {
         jobs = new LinkedList<>(jobMap.values());
+        jobMap = null;  // Destroying the references in the map;
         issues = new ArrayList<>();
         numberOfJobs = jobs.size();
         numberOfJobsDigitCount = (int) (Math.log10(numberOfJobs) + 1);
