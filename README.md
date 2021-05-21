@@ -2,6 +2,7 @@
 This image stitcher is written in Java 12, so you will need to install Java 12 or higher.
 
 Until a UI is added, do this to stitch your fragmented screenshots back together:
+
 0. Download the .jar file from the Releases on the right.
 
 1. Open up some command line. If using linux you should know how to do this. If using windows, press WINDOWS and type "cmd", then press enter. If using mac then good luck, bro, I never touched a mac ¯\\\_(ツ)\_/¯. Duck Duck Go is your friend.
