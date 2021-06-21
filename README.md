@@ -16,7 +16,7 @@ Until a UI is added, do this to stitch your fragmented screenshots back together
     * The output folder of your screenshots should be found in your factorio folder:
     When using linux that is the same .factorio folder from before/script-output/screenshots/GAMESEEDOFYOURSAVE/split. Under Windows thats the same Factorio folder from before with the same sub path. Under Mac, well, I *really, really* hope you know what you are doing :D
 
-5. The programm will create a folder in the directory it is in, called "stitched screenshots" with all stitched screenshots in it.
+5. The program will create a folder in the directory it is in, called "stitched screenshots" with all stitched screenshots in it.
 
 
 Last, but not least, I would recommend you to stitch them back together often and clean up the fragmented files, as especially when screenshotting with 8k resolution, your hard drive will quickly fill up with data. When stitching the images your hard drive will require as much space as the input folder has in size. I do not delete those files automatically for you as I dont even trust myself enough to do automated deletion of *anything*. 
