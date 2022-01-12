@@ -27,6 +27,3 @@ hs_err_pid*
 *.iml
 workspace/
 src/META-INF/
-
-# debug stuff
-debug/
