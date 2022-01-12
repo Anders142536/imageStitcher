@@ -12,7 +12,7 @@ Until a UI is added, do this to stitch your fragmented screenshots back together
 3. Enter "java -jar imagestitcher.jar" and press enter. Do not panic, on the first run this will throw an error, due to no config file being found. It will be created for you, so just open the file that is described in the response, then run the program again.
 
 4. Config:
-    * Please keep in mind that under windows a path has to be given with / instead of \, due to some stupid java limitation when reading text from a file.
+    * Please keep in mind that under windows a path has to be given with / instead of \\, due to some stupid java limitation when reading text from a file.
     * The output folder of your screenshots should be found in your factorio folder:
     When using linux that is the same .factorio folder from before/script-output/screenshots/GAMESEEDOFYOURSAVE/split. Under Windows thats the same Factorio folder from before with the same sub path. Under Mac, well, I *really, really* hope you know what you are doing :D
 
