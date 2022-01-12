@@ -1,5 +1,5 @@
 # Compiled class file
-*.class
+out/
 
 # Log file
 *.log
@@ -25,3 +25,8 @@ hs_err_pid*
 # idea files
 .idea/
 *.iml
+workspace/
+src/META-INF/
+
+# debug stuff
+debug/
