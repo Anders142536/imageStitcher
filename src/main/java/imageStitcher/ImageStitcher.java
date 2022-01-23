@@ -47,8 +47,8 @@ public class ImageStitcher {
         System.out.print(inputFolder.list().length + " files found in input folder being groupable into.. ");
         readFilesFromInputFolder(inputFolder);
         System.out.print(jobMap.size() + " screenshot(s).\n" +
-                "Please keep in mind that this might take quite a while and will take the same amount of space on your hard drive" +
-                " as the initial input folder.\n" +
+                "Please keep in mind that this might take quite a while and will take the same\n" +
+                "amount of space on your hard drive as the initial input folder.\n\n" +
                 "Do you want to start stitching? (yes/no) ");
 
         if (!userWantsToStitch()) return;
@@ -60,7 +60,9 @@ public class ImageStitcher {
      * Shows a nice welcome message with my skull ascii art.
      */
     private static void welcome() {
-        String welcome = "               /@@@@@@@@@@@@@@@@              \n" +
+        // String concatenation as it will be optimized by the compiler anyway
+        String welcome =
+                "               /@@@@@@@@@@@@@@@@              \n" +
                 "          @@@@@@@@@@@@@@@@@@@@@@(,            \n" +
                 "       @@@@@@@@@@@@@@@@@@@@@@@@@(##/*         \n" +
                 "     %@@@@@@@@@@@@@@@@@@@@@@@@@@ .(#****      \n" +
@@ -81,24 +83,24 @@ public class ImageStitcher {
                 " @@@@             @\n" +
                 "  &@             @\n" +
                 "             ,@@@(      Welcome!\n" +
-                "            ,@@@@&      This is the image stitcher program written by Anders142536.                      \n" +
-                "             @@@@.      It is designed to stitch the split output of the Factorio mod\n" +
-                "            ,/@@@       FacAutoScreenshot by Anders142536 into whole images.\n" +
-                "          @@@@%(@       If you find any issues pls contact anders142536@gmail.com or\n" +
-                "          &@@@@         send a message on github.\n" +
+                "            ,@@@@&      This is the image stitcher program written by\n" +
+                "             @@@@.      Anders142536. It is designed to stitch the split output\n" +
+                "            ,/@@@       of the Factorio mod Screenshot Toolkit by Anders142536\n" +
+                "          @@@@%(@       into whole images. If you find any issues pls contact\n" +
+                "          &@@@@         anders142536@gmail.com or open an issue on github.\n" +
                 "           @@@@@@       \n" +
                 "            @@@@        \n";
 
         System.out.println(welcome);
     }
 
-    /**
-     * Attempts to load the config file. If there was no Config file found an empty shell will be created.
-     * @return true if the loading was successful
-     */
+    /** Attempts to load the config file. If there was no Config file found an
+     * empty template will be created.
+     * @return true if the loading was successful */
     private static boolean  loadConfig() {
         System.out.print("Loading config file.. ");
-        pathExecutable = ImageStitcher.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        pathExecutable = ImageStitcher.class.getProtectionDomain()
+                .getCodeSource().getLocation().getPath();
 //        pathExecutable = "/home/anders/git/imageStitcher/workspace/"; //TODO: delete this
 //        pathExecutable = "D:/git/imageStitcher/workspace/"; //TODO: delete this
 
@@ -110,13 +112,15 @@ public class ImageStitcher {
         } catch (FileNotFoundException e) {
             String path = pathParentDir + "/imageStitcher.config";
             System.out.println("\nERROR: Config file not found!\n" +
-                    "If this is your first run, you have nothing to worry about. A config file was created for you here:\n" +
+                    "If this is your first run, you have nothing to worry about. A config file was\n" +
+                    "created for you here:\n" +
                     path + "\nPlease set all configurations and try again.");
             createEmptyConfig(path);
             return false;
         } catch (IOException e) {
             System.out.println("\nERROR: Something went wrong on reading the config file!\n" +
-                    "It should be written in the ini format. Please make sure it is a correctly formatted ini file and try again.");
+                    "It should be written in the ini format. Please make sure it is a correctly\n" +
+                    "formatted ini file and try again.");
             return false;
         } catch (NumberFormatException e) {
             System.out.println("\nERROR: Something went wrong on reading some number!\n" +
@@ -216,7 +220,7 @@ public class ImageStitcher {
         File outputFolder = new File(pathOutputFolder);
         if (!outputFolder.exists()) outputFolder.mkdir();
 
-        printLoadingbar();
+        printLoadingBar();
         for (int i = 0; i < desiredThreads; i++) {
             StitchThread newThread = new StitchThread();
             threads.add(newThread);
@@ -241,26 +245,19 @@ public class ImageStitcher {
 
     static synchronized void jobDone() {
         jobsDoneCount++;
-        printLoadingbar();
+        printLoadingBar();
 
     }
 
-    //TODO: improve this if a way is found
-    private static void printLoadingbar() {
+    private static void printLoadingBar() {
 
-        String bar = "\r[";
-        int lengthBar = 20;
+        StringBuilder bar = new StringBuilder("\r[");
+        int lengthBar = 40;
         int progress = ((jobsDoneCount * lengthBar) / numberOfJobs);
 
-        for (int i = progress; i > 0; i--) {
-            bar += "#";
-        }
-
-        for (int i = lengthBar - progress; i > 0; i--) {
-            bar += " ";
-        }
-
-        bar += "]";
+        bar.append("#".repeat(Math.max(0, progress)));
+        bar.append(" ".repeat(Math.max(0, lengthBar - progress)));
+        bar.append("]");
 
         String formattedNumbers = String.format("%1$" + numberOfJobsDigitCount + "s / " + numberOfJobs, jobsDoneCount);
         String formattedPercentages = String.format("%1$2d", ((jobsDoneCount * 100) / numberOfJobs));
@@ -270,21 +267,21 @@ public class ImageStitcher {
     private static String formatDuration(long duration) {
         // 1000 000 000
         //  min   s  ms
-        String result = "";
+        StringBuilder result = new StringBuilder();
         if (duration >= 3_600_000) {
-            result += (int)(duration / 3_600_000) + "h ";
+            result.append((int)(duration / 3_600_000)).append("h ");
             duration %= 3_600_000;
         }
         if (duration >= 60_000) {
-            result += (int)(duration / 60_000) + "min ";
+            result.append((int)(duration / 60_000)).append("min ");
             duration %= 60_000;
         }
         if (duration >= 1000) {
-            result += (int)(duration / 1000) + "s ";
+            result.append((int)(duration / 1000)).append("s ");
             duration %= 1000;
         }
-        result += duration + "ms";
-        return result;
+        result.append(duration).append("ms");
+        return result.toString();
     }
 
     private static void printIssues() {
