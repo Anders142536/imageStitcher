@@ -1,3 +1,5 @@
+package imageStitcher;
+
 public class StitchException extends Exception {
     String filename;
     String reason;

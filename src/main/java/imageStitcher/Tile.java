@@ -1,3 +1,5 @@
+package imageStitcher;
+
 import java.io.File;
 
 public class Tile {

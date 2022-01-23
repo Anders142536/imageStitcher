@@ -1,3 +1,5 @@
+package imageStitcher;
+
 import org.ini4j.Ini;
 
 import java.io.File;

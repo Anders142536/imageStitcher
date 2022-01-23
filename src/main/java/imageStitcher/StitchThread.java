@@ -1,3 +1,5 @@
+package imageStitcher;
+
 public class StitchThread extends Thread {
     @Override
     public void run() {
