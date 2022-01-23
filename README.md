@@ -1,5 +1,5 @@
 
-This image stitcher is written in Java 12, so you will need to install Java 12 or higher.
+This image stitcher is written in Java 17, so you will need to install Java 17 or higher.
 
 Until a UI is added, do this to stitch your fragmented screenshots back together:
 
