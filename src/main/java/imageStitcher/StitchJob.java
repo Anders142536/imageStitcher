@@ -16,8 +16,8 @@ public class StitchJob {
     private final List<Tile> tiles;
     private int stepSizeX;
     private int stepSizeY;
-    private int maxX;
-    private int maxY;
+    private int stepsX;
+    private int stepsY;
     private BufferedImage result;
 
     public StitchJob(String name) {
@@ -26,8 +26,9 @@ public class StitchJob {
     }
 
     public void addFile(File f, int posX, int posY) {
-        if (posX > maxX) maxX = posX;
-        if (posY > maxY) maxY = posY;
+        // positions start counting at 0, steps at 1!
+        if (posX >= stepsX) stepsX = posX + 1;
+        if (posY >= stepsY) stepsY = posY + 1;
         tiles.add(new Tile(f, posX, posY));
     }
 
@@ -35,10 +36,10 @@ public class StitchJob {
 //        long startTimestamp = System.nanoTime();
         if (tiles.isEmpty()) throw new StitchException(name, "ERROR: No files found to stitch!");
         if (!tilesSizeIsValid()) ImageStitcher.foundIssue(new StitchException(name, "WARN: There seem to be some files missing. " +
-                "There were " + tiles.size() + " files found. " + (maxX + 1) + " times " + (maxY + 1) + " were expected."));
+                "There were " + tiles.size() + " files found. " + stepsX + " times " + stepsY + " were expected."));
         getStepSizesFromSample();
 
-        result = new BufferedImage(stepSizeX * maxX, stepSizeY * maxY, BufferedImage.TYPE_INT_ARGB);
+        result = new BufferedImage(stepSizeX * stepsX, stepSizeY * stepsY, BufferedImage.TYPE_INT_ARGB);
 
         drawFilesToResult();
         writeResultToFile();
@@ -49,7 +50,7 @@ public class StitchJob {
     }
 
     private boolean tilesSizeIsValid() {
-        return tiles.size() == (maxX + 1) * (maxY + 1);
+        return tiles.size() == stepsX * stepsY;
     }
 
     private void getStepSizesFromSample() throws StitchException {

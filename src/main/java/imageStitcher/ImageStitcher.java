@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ImageStitcher {
+public final class ImageStitcher {
     static HashMap<String, StitchJob> jobMap = new HashMap<>();
     static Queue<StitchJob> jobs;
     static List<StitchThread> threads = new ArrayList<>();
@@ -214,7 +214,7 @@ public class ImageStitcher {
         jobMap = null;  // Destroying the references in the map;
         issues = new ArrayList<>();
         numberOfJobs = jobs.size();
-        numberOfJobsDigitCount = (int) (Math.log10(numberOfJobs) + 1);
+        numberOfJobsDigitCount = (int)(Math.log10(numberOfJobs) + 1);
 
         pathOutputFolder = pathParentDir + "/stitchedScreenshots";
         File outputFolder = new File(pathOutputFolder);
